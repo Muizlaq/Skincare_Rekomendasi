@@ -1,0 +1,394 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Produk - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">Edit Produk</h2>
+                    <p class="text-muted mb-0">Ubah informasi produk skincare</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin_products') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Kembali ke Daftar Produk
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                    <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} me-2"></i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Edit Form -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0">
+                        <i class="fas fa-edit me-2 text-primary"></i>
+                        Informasi Produk
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="editProductForm">
+                        <div class="row">
+                            <!-- Product Name -->
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Nama Produk <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" value="{{ product.name }}" required>
+                            </div>
+
+                            <!-- Brand -->
+                            <div class="col-md-6 mb-3">
+                                <label for="brand" class="form-label">Brand <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="brand" name="brand" value="{{ product.brand }}" required>
+                            </div>
+
+                            <!-- Category -->
+                            <div class="col-md-6 mb-3">
+                                <label for="category" class="form-label">Kategori <span class="text-danger">*</span></label>
+                                <select class="form-select" id="category" name="category" required>
+                                    <option value="">Pilih Kategori</option>
+                                    <option value="Cleanser" {{ 'selected' if product.category == 'Cleanser' }}>Cleanser</option>
+                                    <option value="Moisturizer" {{ 'selected' if product.category == 'Moisturizer' }}>Moisturizer</option>
+                                    <option value="Serum" {{ 'selected' if product.category == 'Serum' }}>Serum</option>
+                                    <option value="Sunscreen" {{ 'selected' if product.category == 'Sunscreen' }}>Sunscreen</option>
+                                    <option value="Toner" {{ 'selected' if product.category == 'Toner' }}>Toner</option>
+                                    <option value="Scrub" {{ 'selected' if product.category == 'Scrub' }}>Scrub</option>
+                                    <option value="Deodorant" {{ 'selected' if product.category == 'Deodorant' }}>Deodorant</option>
+                                    <option value="Other" {{ 'selected' if product.category == 'Other' }}>Lainnya</option>
+                                </select>
+                            </div>
+
+                            <!-- Price -->
+                            <div class="col-md-6 mb-3">
+                                <label for="price" class="form-label">Harga (Rp) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="price" name="price" min="0" step="0.01" value="{{ product.price }}" required>
+                            </div>
+
+                            <!-- Rating -->
+                            <div class="col-md-6 mb-3">
+                                <label for="rating" class="form-label">Rating</label>
+                                <input type="number" class="form-control" id="rating" name="rating" min="0" max="5" step="0.1" value="{{ product.rating or 0.0 }}">
+                                <div class="form-text">Rating dari 0.0 hingga 5.0</div>
+                            </div>
+
+                            <!-- Skin Type -->
+                            <div class="col-md-6 mb-3">
+                                <label for="skin_type" class="form-label">Jenis Kulit</label>
+                                <select class="form-select" id="skin_type" name="skin_type">
+                                    <option value="">Pilih Jenis Kulit</option>
+                                    <option value="All" {{ 'selected' if product.skin_type == 'All' }}>Semua Jenis Kulit</option>
+                                    <option value="Oily" {{ 'selected' if product.skin_type == 'Oily' }}>Berminyak</option>
+                                    <option value="Dry" {{ 'selected' if product.skin_type == 'Dry' }}>Kering</option>
+                                    <option value="Combination" {{ 'selected' if product.skin_type == 'Combination' }}>Kombinasi</option>
+                                    <option value="Sensitive" {{ 'selected' if product.skin_type == 'Sensitive' }}>Sensitif</option>
+                                    <option value="Normal" {{ 'selected' if product.skin_type == 'Normal' }}>Normal</option>
+                                    <option value="Acne-Prone" {{ 'selected' if product.skin_type == 'Acne-Prone' }}>Berjerawat</option>
+                                </select>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="col-12 mb-3">
+                                <label for="description" class="form-label">Deskripsi <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="description" name="description" rows="4" required>{{ product.description }}</textarea>
+                            </div>
+
+                            <!-- Ingredients -->
+                            <div class="col-12 mb-3">
+                                <label for="ingredients" class="form-label">Bahan-bahan</label>
+                                <textarea class="form-control" id="ingredients" name="ingredients" rows="3" placeholder="Masukkan bahan-bahan produk (opsional)">{{ product.ingredients or '' }}</textarea>
+                            </div>
+
+                            <!-- Image URL -->
+                            <div class="col-12 mb-3">
+                                <label for="image_url" class="form-label">URL Gambar</label>
+                                <input type="url" class="form-control" id="image_url" name="image_url" value="{{ product.image_url or '' }}" placeholder="https://example.com/image.jpg">
+                                <div class="form-text">URL gambar produk (opsional)</div>
+                            </div>
+
+                            <!-- Product Link URL -->
+                            <div class="col-12 mb-3">
+                                <label for="link_produk" class="form-label">URL Produk (Marketplace/Toko)</label>
+                                <input type="url" class="form-control" id="link_produk" name="link_produk" value="{{ product.link_produk or '' }}" placeholder="https://example.com/produk">
+                                <div class="form-text">Tautan ke halaman produk (opsional, untuk referensi/checkout)</div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between">
+                                    <div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Field dengan tanda <span class="text-danger">*</span> wajib diisi
+                                        </small>
+                                    </div>
+                                    <div>
+                                        <a href="{{ url_for('admin_products') }}" class="btn btn-outline-secondary me-2">
+                                            <i class="fas fa-times me-2"></i>Batal
+                                        </a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save me-2"></i>Simpan Perubahan
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Product Preview -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h6 class="mb-0">
+                        <i class="fas fa-eye me-2 text-info"></i>
+                        Preview Produk
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <img id="previewImage" 
+                             src="{{ product.image_url or '/static/images/no-image.png' }}" 
+                             alt="Preview" 
+                             class="img-fluid rounded" 
+                             style="max-height: 200px; object-fit: cover;"
+                             onerror="this.src='/static/images/no-image.png'">
+                    </div>
+                    
+                    <div class="product-info">
+                        <h6 id="previewName" class="mb-2">{{ product.name }}</h6>
+                        <div class="mb-2">
+                            <span id="previewBrand" class="badge bg-primary">{{ product.brand }}</span>
+                            <span id="previewCategory" class="badge bg-info">{{ product.category or 'Kategori' }}</span>
+                        </div>
+                        <div class="mb-2">
+                            <strong id="previewPrice">Rp {{ "{:,.0f}".format(product.price) }}</strong>
+                            <div class="mt-1">
+                                <span id="previewRating">
+                                    {% for i in range(5) %}
+                                        <i class="fas fa-star {{ 'text-warning' if i < (product.rating or 0) else 'text-muted' }}"></i>
+                                    {% endfor %}
+                                    <small class="text-muted ms-1">{{ product.rating or 0.0 }}</small>
+                                </span>
+                            </div>
+                        </div>
+                        <p id="previewDescription" class="text-muted small mb-0">
+                            {{ product.description[:100] }}{% if product.description|length > 100 %}...{% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Info -->
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-body">
+                    <h6 class="mb-3">
+                        <i class="fas fa-info-circle me-2 text-success"></i>
+                        Informasi Produk
+                    </h6>
+                    <ul class="list-unstyled mb-0">
+                        <li class="mb-2">
+                            <strong>ID:</strong> {{ product.id }}
+                        </li>
+                        <li class="mb-2">
+                            <strong>Dibuat:</strong> 
+                            {{ product.created_at.strftime('%Y-%m-%d') if product.created_at else 'Tidak diketahui' }}
+                        </li>
+                        <li class="mb-0">
+                            <strong>Terakhir Diupdate:</strong> 
+                            {{ product.updated_at.strftime('%Y-%m-%d') if product.updated_at else 'Belum pernah' }}
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form elements
+    const form = document.getElementById('editProductForm');
+    const nameInput = document.getElementById('name');
+    const brandInput = document.getElementById('brand');
+    const categorySelect = document.getElementById('category');
+    const priceInput = document.getElementById('price');
+    const ratingSelect = document.getElementById('rating');
+    const descriptionTextarea = document.getElementById('description');
+    const imageUrlInput = document.getElementById('image_url');
+    
+    // Preview elements
+    const previewImage = document.getElementById('previewImage');
+    const previewName = document.getElementById('previewName');
+    const previewBrand = document.getElementById('previewBrand');
+    const previewCategory = document.getElementById('previewCategory');
+    const previewPrice = document.getElementById('previewPrice');
+    const previewRating = document.getElementById('previewRating');
+    const previewDescription = document.getElementById('previewDescription');
+    
+    // Update preview functions
+    function updatePreview() {
+        // Update name
+        if (nameInput.value) {
+            previewName.textContent = nameInput.value;
+        }
+        
+        // Update brand
+        if (brandInput.value) {
+            previewBrand.textContent = brandInput.value;
+        }
+        
+        // Update category
+        if (categorySelect.value) {
+            previewCategory.textContent = categorySelect.options[categorySelect.selectedIndex].text;
+        }
+        
+        // Update price
+        if (priceInput.value) {
+            const price = parseInt(priceInput.value);
+            previewPrice.textContent = 'Rp ' + price.toLocaleString('id-ID');
+        }
+        
+        // Update rating
+        if (ratingSelect.value) {
+            const rating = parseFloat(ratingSelect.value);
+            let starsHtml = '';
+            for (let i = 1; i <= 5; i++) {
+                if (i <= rating) {
+                    starsHtml += '<i class="fas fa-star text-warning"></i>';
+                } else {
+                    starsHtml += '<i class="fas fa-star text-muted"></i>';
+                }
+            }
+            starsHtml += '<small class="text-muted ms-1">' + rating + '</small>';
+            previewRating.innerHTML = starsHtml;
+        }
+        
+        // Update description
+        if (descriptionTextarea.value) {
+            const desc = descriptionTextarea.value;
+            previewDescription.textContent = desc.length > 100 ? desc.substring(0, 100) + '...' : desc;
+        }
+        
+        // Update image
+        if (imageUrlInput.value) {
+            previewImage.src = imageUrlInput.value;
+        }
+    }
+    
+    // Add event listeners
+    nameInput.addEventListener('input', updatePreview);
+    brandInput.addEventListener('input', updatePreview);
+    categorySelect.addEventListener('change', updatePreview);
+    priceInput.addEventListener('input', updatePreview);
+    ratingSelect.addEventListener('change', updatePreview);
+    descriptionTextarea.addEventListener('input', updatePreview);
+    imageUrlInput.addEventListener('input', updatePreview);
+    
+    // Form validation
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        // Check required fields
+        const requiredFields = [nameInput, brandInput, priceInput, descriptionTextarea];
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        // Check price is positive
+        if (priceInput.value && parseInt(priceInput.value) <= 0) {
+            priceInput.classList.add('is-invalid');
+            isValid = false;
+        }
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('Mohon lengkapi semua field yang wajib diisi dengan benar.');
+        }
+    });
+    
+    // Character counter for description
+    const maxLength = 1000;
+    descriptionTextarea.addEventListener('input', function() {
+        const remaining = maxLength - this.value.length;
+        const counter = this.parentNode.querySelector('.form-text');
+        counter.textContent = `${remaining} karakter tersisa`;
+        
+        if (remaining < 0) {
+            this.classList.add('is-invalid');
+            counter.classList.add('text-danger');
+        } else {
+            this.classList.remove('is-invalid');
+            counter.classList.remove('text-danger');
+        }
+    });
+});
+</script>
+
+<style>
+.product-info h6 {
+    color: #495057;
+    font-weight: 600;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.form-label {
+    font-weight: 500;
+    color: #495057;
+}
+
+.form-text {
+    font-size: 0.875em;
+}
+
+.is-invalid {
+    border-color: #dc3545;
+}
+
+.card-header {
+    background-color: #f8f9fa !important;
+}
+
+#previewImage {
+    border: 2px solid #dee2e6;
+    transition: all 0.3s ease;
+}
+
+#previewImage:hover {
+    transform: scale(1.05);
+}
+
+.input-group-text {
+    background-color: #e9ecef;
+    border-color: #ced4da;
+}
+</style>
+{% endblock %}

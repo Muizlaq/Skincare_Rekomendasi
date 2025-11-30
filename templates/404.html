@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}Halaman Tidak Ditemukan - Skincare Recommendation{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="error-page">
+                <div class="error-code mb-4">
+                    <h1 class="display-1 text-primary fw-bold">404</h1>
+                </div>
+                
+                <div class="error-message mb-4">
+                    <h2 class="h3 mb-3">Oops! Halaman Tidak Ditemukan</h2>
+                    <p class="text-muted mb-4">
+                        Maaf, halaman yang Anda cari tidak dapat ditemukan. 
+                        Mungkin halaman telah dipindahkan atau URL yang Anda masukkan salah.
+                    </p>
+                </div>
+                
+                <div class="error-actions">
+                    <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg me-3">
+                        <i class="fas fa-home me-2"></i>Kembali ke Beranda
+                    </a>
+                    <a href="javascript:history.back()" class="btn btn-outline-secondary btn-lg">
+                        <i class="fas fa-arrow-left me-2"></i>Halaman Sebelumnya
+                    </a>
+                </div>
+                
+                <div class="mt-5">
+                    <div class="row">
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-home fa-2x text-primary mb-3"></i>
+                                    <h5 class="card-title">Beranda</h5>
+                                    <p class="card-text text-muted">Kembali ke halaman utama</p>
+                                    <a href="{{ url_for('index') }}" class="btn btn-outline-primary btn-sm">Kunjungi</a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-user-plus fa-2x text-success mb-3"></i>
+                                    <h5 class="card-title">Daftar</h5>
+                                    <p class="card-text text-muted">Buat akun baru untuk rekomendasi</p>
+                                    <a href="{{ url_for('register') }}" class="btn btn-outline-success btn-sm">Daftar</a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-4 mb-3">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-sign-in-alt fa-2x text-info mb-3"></i>
+                                    <h5 class="card-title">Login</h5>
+                                    <p class="card-text text-muted">Masuk ke akun Anda</p>
+                                    <a href="{{ url_for('login') }}" class="btn btn-outline-info btn-sm">Login</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.error-page {
+    padding: 2rem 0;
+}
+
+.error-code h1 {
+    font-size: 8rem;
+    text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+}
+
+@media (max-width: 768px) {
+    .error-code h1 {
+        font-size: 6rem;
+    }
+    
+    .error-actions .btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+    
+    .error-actions .btn:last-child {
+        margin-bottom: 0;
+    }
+}
+</style>
+{% endblock %}

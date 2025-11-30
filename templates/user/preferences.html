@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}Preferensi Skincare - Sistem Rekomendasi Skincare Pria{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Header -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-body text-center py-4">
+                    <i class="fas fa-user-cog fa-3x text-primary mb-3"></i>
+                    <h2 class="mb-2">Preferensi Skincare Anda</h2>
+                    <p class="text-muted mb-0">
+                        Lengkapi informasi di bawah untuk mendapatkan rekomendasi produk skincare yang tepat
+                    </p>
+                </div>
+            </div>
+
+            <!-- Form -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <form method="POST" id="preferencesForm">
+                        <!-- Kondisi Kulit -->
+                        <div class="mb-4">
+                            <label for="kondisi_kulit" class="form-label fw-bold">
+                                <i class="fas fa-face-smile me-2 text-info"></i>Kondisi Kulit
+                            </label>
+                            <select class="form-select" id="kondisi_kulit" name="kondisi_kulit" required>
+                                <option value="">Pilih kondisi kulit Anda</option>
+                                <option value="normal" {{ 'selected' if user_preferences and user_preferences.kondisi_kulit == 'normal' }}>Normal</option>
+                                <option value="kering" {{ 'selected' if user_preferences and user_preferences.kondisi_kulit == 'kering' }}>Kering</option>
+                                <option value="berminyak" {{ 'selected' if user_preferences and user_preferences.kondisi_kulit == 'berminyak' }}>Berminyak</option>
+                                <option value="kombinasi" {{ 'selected' if user_preferences and user_preferences.kondisi_kulit == 'kombinasi' }}>Kombinasi</option>
+                                <option value="sensitif" {{ 'selected' if user_preferences and user_preferences.kondisi_kulit == 'sensitif' }}>Sensitif</option>
+                            </select>
+                            <div class="form-text">Pilih kondisi kulit yang paling sesuai dengan Anda</div>
+                        </div>
+
+                        <!-- Masalah Kulit -->
+                        <div class="mb-4">
+                            <label for="masalah_kulit" class="form-label fw-bold">
+                                <i class="fas fa-exclamation-triangle me-2 text-warning"></i>Masalah Kulit Utama
+                            </label>
+                            <select class="form-select" id="masalah_kulit" name="masalah_kulit" required>
+                                <option value="">Pilih masalah kulit utama</option>
+                                <option value="jerawat" {{ 'selected' if user_preferences and user_preferences.masalah_kulit == 'jerawat' }}>Jerawat</option>
+                                <option value="komedo" {{ 'selected' if user_preferences and user_preferences.masalah_kulit == 'komedo' }}>Komedo</option>
+                                <option value="flek_hitam" {{ 'selected' if user_preferences and user_preferences.masalah_kulit == 'flek_hitam' }}>Flek Hitam</option>
+                                <option value="kerutan" {{ 'selected' if user_preferences and user_preferences.masalah_kulit == 'kerutan' }}>Kerutan</option>
+                                <option value="kulit_kusam" {{ 'selected' if user_preferences and user_preferences.masalah_kulit == 'kulit_kusam' }}>Kulit Kusam</option>
+                                <option value="pori_besar" {{ 'selected' if user_preferences and user_preferences.masalah_kulit == 'pori_besar' }}>Pori Besar</option>
+                                <option value="tidak_ada" {{ 'selected' if user_preferences and user_preferences.masalah_kulit == 'tidak_ada' }}>Tidak Ada Masalah Khusus</option>
+                            </select>
+                            <div class="form-text">Pilih masalah kulit yang paling ingin Anda atasi</div>
+                        </div>
+
+                        <!-- Budget Range -->
+                        <div class="mb-4">
+                            <label for="rentang_harga" class="form-label fw-bold">
+                                <i class="fas fa-money-bill me-2 text-success"></i>Rentang Budget
+                            </label>
+                            <select class="form-select" id="rentang_harga" name="rentang_harga" required>
+                                <option value="">Pilih rentang budget...</option>
+                                <option value="0-50000" {{ 'selected' if user_preferences and user_preferences.rentang_harga == '0-50000' else '' }}>
+                                    Rp 0 - Rp 50.000
+                                </option>
+                                <option value="50000-100000" {{ 'selected' if user_preferences and user_preferences.rentang_harga == '50000-100000' else '' }}>
+                                    Rp 50.000 - Rp 100.000
+                                </option>
+                                <option value="100000-200000" {{ 'selected' if user_preferences and user_preferences.rentang_harga == '100000-200000' else '' }}>
+                                    Rp 100.000 - Rp 200.000
+                                </option>
+                                <option value="200000-500000" {{ 'selected' if user_preferences and user_preferences.rentang_harga == '200000-500000' else '' }}>
+                                    Rp 200.000 - Rp 500.000
+                                </option>
+                                <option value="500000+" {{ 'selected' if user_preferences and user_preferences.rentang_harga == '500000+' else '' }}>
+                                    Rp 500.000+
+                                </option>
+                            </select>
+                            <div class="form-text">Pilih rentang budget yang sesuai dengan kemampuan Anda</div>
+                        </div>
+
+                        <!-- Frekuensi Pemakaian -->
+                        <div class="mb-4">
+                            <label for="frekuensi_penggunaan" class="form-label fw-bold">
+                            <i class="fas fa-clock me-2"></i>Frekuensi Penggunaan
+                        </label>
+                        <select class="form-select" id="frekuensi_penggunaan" name="frekuensi_penggunaan" required>
+                            <option value="">Pilih frekuensi penggunaan</option>
+                            <option value="pagi" {{ 'selected' if user_preferences and user_preferences.frekuensi_penggunaan == 'pagi' }}>Pagi</option>
+                            <option value="malam" {{ 'selected' if user_preferences and user_preferences.frekuensi_penggunaan == 'malam' }}>Malam</option>
+                            <option value="pagi_malam" {{ 'selected' if user_preferences and user_preferences.frekuensi_penggunaan == 'pagi_malam' }}>Pagi dan Malam</option>
+                        </select>
+                            <div class="form-text">Seberapa sering Anda berencana menggunakan produk skincare</div>
+                        </div>
+
+                        <!-- Bahan Aktif -->
+                        <div class="mb-4">
+                            <label for="efektivitas_bahan_aktif" class="form-label fw-bold">
+                                <i class="fas fa-flask me-2"></i>Efektivitas Bahan Aktif
+                            </label>
+                            <select class="form-select" id="efektivitas_bahan_aktif" name="efektivitas_bahan_aktif">
+                                <option value="">Pilih efektivitas bahan aktif</option>
+                                <option value="rendah" {{ 'selected' if user_preferences and user_preferences.efektivitas_bahan_aktif == 'rendah' }}>Rendah</option>
+                                <option value="sedang" {{ 'selected' if user_preferences and user_preferences.efektivitas_bahan_aktif == 'sedang' }}>Sedang</option>
+                                <option value="tinggi" {{ 'selected' if user_preferences and user_preferences.efektivitas_bahan_aktif == 'tinggi' }}>Tinggi</option>
+                            </select>
+                            <div class="form-text">Bahan aktif yang pernah cocok atau ingin Anda coba</div>
+                        </div>
+
+                        <!-- Preferensi Produk -->
+                        <div class="mb-4">
+                            <label for="preferensi_produk" class="form-label fw-bold">
+                                <i class="fas fa-heart me-2 text-danger"></i>Preferensi Jenis Produk
+                            </label>
+                            <select class="form-select" id="preferensi_produk" name="preferensi_produk">
+                                <option value="">Pilih preferensi produk (opsional)</option>
+                                <option value="cleanser" {{ 'selected' if user_preferences and user_preferences.preferensi_produk == 'cleanser' }}>Cleanser/Pembersih</option>
+                                <option value="moisturizer" {{ 'selected' if user_preferences and user_preferences.preferensi_produk == 'moisturizer' }}>Moisturizer/Pelembab</option>
+                                <option value="serum" {{ 'selected' if user_preferences and user_preferences.preferensi_produk == 'serum' }}>Serum</option>
+                                <option value="sunscreen" {{ 'selected' if user_preferences and user_preferences.preferensi_produk == 'sunscreen' }}>Sunscreen</option>
+                                <option value="toner" {{ 'selected' if user_preferences and user_preferences.preferensi_produk == 'toner' }}>Toner</option>
+                                <option value="treatment" {{ 'selected' if user_preferences and user_preferences.preferensi_produk == 'treatment' }}>Treatment/Perawatan</option>
+                                <option value="semua" {{ 'selected' if user_preferences and user_preferences.preferensi_produk == 'semua' }}>Semua Jenis</option>
+                            </select>
+                            <div class="form-text">Jenis produk yang paling Anda butuhkan saat ini</div>
+                        </div>
+
+                        <!-- Kata Kunci -->
+                        <div class="mb-4">
+                            <label for="kata_kunci" class="form-label fw-bold">
+                                <i class="fas fa-search me-2 text-info"></i>Kata Kunci Tambahan
+                            </label>
+                            <input type="text" class="form-control" id="kata_kunci" name="kata_kunci" 
+                                   placeholder="Contoh: anti aging, whitening, oil control, dll"
+                                   value="{{ user_preferences.kata_kunci if user_preferences else '' }}">
+                            <div class="form-text">Kata kunci spesifik untuk mempersempit rekomendasi (opsional)</div>
+                        </div>
+
+                        <!-- K Value Selection -->
+                        <div class="mb-4">
+                            <label for="k_value" class="form-label fw-bold">
+                                <i class="fas fa-cogs me-2 text-primary"></i>Jumlah Rekomendasi Utama (K-Value)
+                            </label>
+                            <select class="form-select" id="k_value" name="k_value">
+                                <option value="3" {{ 'selected' if user_preferences and user_preferences.k_value == 3 else 'selected' if not user_preferences }}>3 - Fokus pada yang paling mirip</option>
+                                <option value="4" {{ 'selected' if user_preferences and user_preferences.k_value == 4 }}>4 - Sedikit lebih banyak pilihan</option>
+                                <option value="5" {{ 'selected' if user_preferences and user_preferences.k_value == 5 }}>5 - Seimbang antara fokus dan variasi</option>
+                                <option value="6" {{ 'selected' if user_preferences and user_preferences.k_value == 6 }}>6 - Lebih banyak variasi</option>
+                                <option value="7" {{ 'selected' if user_preferences and user_preferences.k_value == 7 }}>7 - Variasi yang baik</option>
+                                <option value="8" {{ 'selected' if user_preferences and user_preferences.k_value == 8 }}>8 - Banyak pilihan</option>
+                                <option value="9" {{ 'selected' if user_preferences and user_preferences.k_value == 9 }}>9 - Sangat banyak pilihan</option>
+                                <option value="10" {{ 'selected' if user_preferences and user_preferences.k_value == 10 }}>10 - Maksimal variasi</option>
+                            </select>
+                            <div class="form-text">
+                                Menentukan berapa produk yang akan diprioritaskan berdasarkan kemiripan dengan preferensi Anda. 
+                                Nilai lebih kecil = fokus pada produk yang sangat mirip, nilai lebih besar = lebih banyak variasi.
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{{ url_for('user_dashboard') }}" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-arrow-left me-2"></i>Kembali
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save me-2"></i>
+                                {{ 'Update Preferensi' if user_preferences else 'Simpan Preferensi' }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Tips -->
+            <div class="card border-0 shadow-sm mt-4">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb me-2 text-warning"></i>Tips Mengisi Preferensi
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle me-2 text-success"></i>
+                                    Isi semua field yang wajib untuk hasil optimal
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle me-2 text-success"></i>
+                                    Budget realistis membantu rekomendasi yang tepat
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <ul class="list-unstyled mb-0">
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle me-2 text-success"></i>
+                                    Pilih masalah kulit yang paling mengganggu
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-check-circle me-2 text-success"></i>
+                                    Kata kunci membantu pencarian lebih spesifik
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form submission
+    document.getElementById('preferencesForm').addEventListener('submit', function(e) {
+        if (!this.checkValidity()) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        this.classList.add('was-validated');
+    });
+});
+</script>
+
+<style>
+.form-label.fw-bold {
+    color: #495057;
+    margin-bottom: 0.75rem;
+}
+
+.form-select:focus,
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border-color: #dee2e6;
+}
+
+.card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+}
+
+.btn {
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.form-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+</style>
+{% endblock %}

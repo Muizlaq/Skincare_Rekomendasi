@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Edit User - Admin Panel{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient-primary text-white border-0">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-2">
+                                <i class="fas fa-user-edit me-2"></i>
+                                Edit User
+                            </h2>
+                            <p class="mb-0 opacity-75">
+                                Ubah informasi pengguna: {{ user.username }}
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <div class="d-flex gap-2 justify-content-md-end flex-wrap">
+                                <a href="{{ url_for('admin_users') }}" class="btn btn-light">
+                                    <i class="fas fa-arrow-left me-1"></i>Kembali
+                                </a>
+                                <a href="{{ url_for('admin_dashboard') }}" class="btn btn-outline-light">
+                                    <i class="fas fa-home me-1"></i>Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit User Form -->
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0">
+                        <i class="fas fa-user-edit me-2 text-primary"></i>
+                        Informasi User
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST" action="{{ url_for('admin_edit_user', user_id=user.id) }}">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="username" class="form-label">Username <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-user"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="username" name="username" 
+                                           required minlength="3" maxlength="50" 
+                                           pattern="[a-zA-Z0-9_]+" 
+                                           title="Username hanya boleh mengandung huruf, angka, dan underscore"
+                                           value="{{ request.form.username or user.username }}">
+                                </div>
+                                <small class="text-muted">Minimal 3 karakter, hanya huruf, angka, dan underscore</small>
+                            </div>
+                            
+                            <div class="col-md-6 mb-3">
+                                <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-envelope"></i>
+                                    </span>
+                                    <input type="email" class="form-control" id="email" name="email" 
+                                           required maxlength="100"
+                                           value="{{ request.form.email or user.email }}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <label for="nama_lengkap" class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text">
+                                        <i class="fas fa-id-card"></i>
+                                    </span>
+                                    <input type="text" class="form-control" id="nama_lengkap" name="nama_lengkap" 
+                                           required minlength="2" maxlength="100"
+                                           value="{{ request.form.nama_lengkap or user.nama_lengkap }}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-12 mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="change_password" name="change_password">
+                                    <label class="form-check-label" for="change_password">
+                                        <i class="fas fa-key me-1"></i>Ubah Password
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="password-section" style="display: none;">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="password" class="form-label">Password Baru</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-lock"></i>
+                                        </span>
+                                        <input type="password" class="form-control" id="password" name="password" 
+                                               minlength="6" maxlength="255">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('password')">
+                                            <i class="fas fa-eye" id="password-icon"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">Minimal 6 karakter</small>
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="confirm_password" class="form-label">Konfirmasi Password Baru</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-lock"></i>
+                                        </span>
+                                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" 
+                                               minlength="6" maxlength="255">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('confirm_password')">
+                                            <i class="fas fa-eye" id="confirm_password-icon"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- User Info Display -->
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="card-title">
+                                            <i class="fas fa-info-circle me-2"></i>Informasi Tambahan
+                                        </h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <p class="mb-1"><strong>User ID:</strong> {{ user.id }}</p>
+                                                <p class="mb-1"><strong>Tanggal Daftar:</strong> {{ user.tanggal_daftar.strftime('%d/%m/%Y %H:%M') if user.tanggal_daftar else 'N/A' }}</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p class="mb-1"><strong>Status:</strong> 
+                                                    <span class="badge bg-success">Aktif</span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <a href="{{ url_for('admin_users') }}" class="btn btn-secondary">
+                                        <i class="fas fa-times me-1"></i>Batal
+                                    </a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-1"></i>Simpan Perubahan
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function togglePassword(fieldId) {
+    const field = document.getElementById(fieldId);
+    const icon = document.getElementById(fieldId + '-icon');
+    
+    if (field.type === 'password') {
+        field.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        field.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+}
+
+// Toggle password section
+document.getElementById('change_password').addEventListener('change', function() {
+    const passwordSection = document.getElementById('password-section');
+    const passwordField = document.getElementById('password');
+    const confirmPasswordField = document.getElementById('confirm_password');
+    
+    if (this.checked) {
+        passwordSection.style.display = 'block';
+        passwordField.required = true;
+        confirmPasswordField.required = true;
+    } else {
+        passwordSection.style.display = 'none';
+        passwordField.required = false;
+        confirmPasswordField.required = false;
+        passwordField.value = '';
+        confirmPasswordField.value = '';
+    }
+});
+
+// Password confirmation validation
+document.getElementById('confirm_password').addEventListener('input', function() {
+    const password = document.getElementById('password').value;
+    const confirmPassword = this.value;
+    
+    if (password !== confirmPassword) {
+        this.setCustomValidity('Password tidak sama');
+    } else {
+        this.setCustomValidity('');
+    }
+});
+
+document.getElementById('password').addEventListener('input', function() {
+    const confirmPassword = document.getElementById('confirm_password');
+    if (confirmPassword.value) {
+        confirmPassword.dispatchEvent(new Event('input'));
+    }
+});
+</script>
+
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.input-group-text {
+    background-color: #f8f9fa;
+    border-right: none;
+}
+
+.input-group .form-control {
+    border-left: none;
+}
+
+.input-group .form-control:focus {
+    border-left: none;
+    box-shadow: none;
+}
+
+.input-group:focus-within .input-group-text {
+    border-color: #86b7fe;
+}
+</style>
+{% endblock %}

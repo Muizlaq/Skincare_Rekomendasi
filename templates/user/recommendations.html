@@ -1,0 +1,518 @@
+{% extends "base.html" %}
+
+{% block title %}Rekomendasi Produk - Sistem Rekomendasi Skincare Pria{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card bg-gradient-success text-white border-0">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h2 class="mb-2">
+                                <i class="fas fa-magic me-2"></i>
+                                Rekomendasi Produk Skincare
+                            </h2>
+                            <p class="mb-0 opacity-75">
+                                Produk yang dipersonalisasi berdasarkan preferensi dan kebutuhan kulit Anda
+                                <span class="badge bg-light text-dark ms-2">K-Value: {{ preferences.k_value or 3 }}</span>
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-md-end">
+                            <div class="d-flex gap-2 justify-content-md-end flex-wrap">
+                                <a href="{{ url_for('user_preferences') }}" class="btn btn-light">
+                                    <i class="fas fa-cog me-1"></i>Edit Preferensi
+                                </a>
+                                <a href="{{ url_for('user_dashboard') }}" class="btn btn-outline-light">
+                                    <i class="fas fa-home me-1"></i>Dashboard
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter & Search -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <form method="GET" id="filterForm">
+                        <div class="row align-items-end">
+                            <div class="col-md-6">
+            <label for="sort_by" class="form-label">Urutkan</label>
+            <select class="form-select" id="sort_by" name="sort_by">
+                <option value="score" {{ 'selected' if request.args.get('sort_by') == 'score' or not request.args.get('sort_by') }}>Skor Tertinggi (Blended)</option>
+                <option value="knn" {{ 'selected' if request.args.get('sort_by') == 'knn' }}>KNN Murni (Sesuai K)</option>
+                <option value="price_low" {{ 'selected' if request.args.get('sort_by') == 'price_low' }}>Harga Terendah</option>
+                <option value="price_high" {{ 'selected' if request.args.get('sort_by') == 'price_high' }}>Harga Tertinggi</option>
+                <option value="rating" {{ 'selected' if request.args.get('sort_by') == 'rating' }}>Rating Tertinggi</option>
+            </select>
+            <div class="form-check mt-2">
+              <input class="form-check-input" type="checkbox" id="top_k_only" name="top_k_only" value="true" {{ 'checked' if request.args.get('top_k_only') == 'true' }}>
+              <label class="form-check-label" for="top_k_only">
+                Tampilkan hanya Top‑K (daftar berisi tepat K tetangga)
+              </label>
+            </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-sort me-1"></i>Urutkan
+                                    </button>
+                                    <a href="{{ url_for('get_recommendations') }}" class="btn btn-outline-secondary">
+                                        <i class="fas fa-refresh me-1"></i>Reset
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Summary -->
+    {% if recommendations %}
+    <div class="row mb-3">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2 text-primary"></i>
+                    Ditemukan {{ recommendations|length }} produk yang cocok
+                </h5>
+                <div class="text-muted">
+            <small>
+                Diurutkan berdasarkan:
+                {% if not request.args.get('sort_by') or request.args.get('sort_by') == 'score' %}
+                    Skor Kesesuaian
+                {% elif request.args.get('sort_by') == 'knn' %}
+                    KNN Murni (sesuai K){% if request.args.get('top_k_only') == 'true' %} — Top‑K Saja{% endif %}
+                {% elif 'price' in request.args.get('sort_by', '') %}
+                    Harga
+                {% elif request.args.get('sort_by') == 'rating' %}
+                    Rating
+                {% else %}
+                    Skor Kesesuaian
+                {% endif %}
+            </small>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recommendations Grid -->
+    {% if recommendations %}
+    <div class="row">
+        {% for recommendation in recommendations %}
+        {% set product = recommendation.product %}
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100 border-0 shadow-sm product-card">
+                <!-- Score Badge -->
+                <div class="position-relative">
+                    <div class="position-absolute top-0 end-0 m-2">
+                        <span class="badge bg-primary fs-6">
+                            <i class="fas fa-star me-1"></i>{{ "%.1f"|format(recommendation.content_similarity * 100) }}%
+                        </span>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <!-- Product Header -->
+                    <div class="mb-3">
+                        <h5 class="card-title mb-2">{{ product.name }}</h5>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="badge bg-light text-dark border">{{ product.brand.title() }}</span>
+                            <strong class="text-success fs-5">{{ product.price }}</strong>
+                        </div>
+                    </div>
+
+                    <!-- Product Details -->
+                    <div class="mb-3">
+                        {% if product.jenis_produk %}
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <i class="fas fa-tag me-1"></i>Jenis: 
+                            </small>
+                            <span class="badge bg-info">{{ product.jenis_produk.title() }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if product.bahan_utama %}
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <i class="fas fa-flask me-1"></i>Bahan Utama: 
+                            </small>
+                            <span class="text-primary">{{ product.bahan_utama.title() }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if product.kondisi_kulit %}
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <i class="fas fa-face-smile me-1"></i>Untuk Kulit: 
+                            </small>
+                            <span class="text-info">{{ product.kondisi_kulit.title() }}</span>
+                        </div>
+                        {% endif %}
+
+                        {% if product.rating %}
+                        <div class="mb-2">
+                            <small class="text-muted">
+                                <i class="fas fa-star me-1"></i>Rating: 
+                            </small>
+                            <span class="text-warning">{{ product.rating }}/5</span>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Why Recommended -->
+                    {% if recommendation.explanation %}
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">
+                            <i class="fas fa-lightbulb me-1"></i>Mengapa Direkomendasikan:
+                        </h6>
+                        <p class="small text-muted mb-0">{{ recommendation.explanation }}</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- KNN Calculation Details -->
+                    {% if recommendation.knn_details %}
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">
+                            <i class="fas fa-calculator me-1"></i>Detail Perhitungan KNN:
+                        </h6>
+                        <div class="small text-muted">
+                            <div class="mb-1">
+                                <strong>Jarak Euclidean:</strong> {{ "%.3f"|format(recommendation.knn_distance) }}
+                            </div>
+                            <div class="mb-1">
+                                <strong>Rumus:</strong> <code>{{ recommendation.knn_details.distance_calculation }}</code>
+                            </div>
+                            <div class="mb-1">
+                                <strong>Vektor User:</strong> [{{ "%.3f"|format(recommendation.knn_details.user_vector[0]) }}, {{ "%.3f"|format(recommendation.knn_details.user_vector[1]) }}, {{ "%.3f"|format(recommendation.knn_details.user_vector[2]) }}]
+                            </div>
+                            <div class="mb-1">
+                                <strong>Vektor Produk:</strong> [{{ "%.3f"|format(recommendation.knn_details.product_vector[0]) }}, {{ "%.3f"|format(recommendation.knn_details.product_vector[1]) }}, {{ "%.3f"|format(recommendation.knn_details.product_vector[2]) }}]
+                            </div>
+                            <div class="small">
+                                <em>Semakin kecil jarak, semakin mirip dengan preferensi Anda</em>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Score Breakdown -->
+                    <div class="mb-3">
+                        <h6 class="text-muted mb-2">
+                            <i class="fas fa-chart-bar me-1"></i>Breakdown Skor:
+                        </h6>
+                        <div class="small">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Kesesuaian Konten:</span>
+                                <span class="text-primary">{{ "%.1f"|format(recommendation.content_similarity * 100) }}%</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Skor KNN:</span>
+                                <span class="text-info">{{ "%.3f"|format(recommendation.knn_score) }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2">
+                        {% if product.link_produk %}
+                        <a href="{{ product.link_produk }}" target="_blank" class="btn btn-success btn-sm">
+                            <i class="fas fa-external-link-alt me-1"></i>Beli di {{ product.marketplace|title }}
+                        </a>
+                        {% endif %}
+                        <button class="btn btn-outline-primary btn-sm" 
+                                onclick="showProductDetail({{ product.id }})">
+                            <i class="fas fa-info-circle me-1"></i>Detail Produk
+                        </button>
+                        <!-- Rating stars -->
+                        <div class="mt-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="small text-muted">Penilaian Anda:</span>
+                                <div class="rating-stars" data-product-id="{{ product.id }}">
+                                    {% for s in range(1,6) %}
+                                    <i class="fas fa-star star-icon text-secondary" role="button" aria-label="rate {{ s }}"
+                                       onclick="submitRating({{ product.id }}, {{ s }})"></i>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <small class="text-success d-none" id="rating-msg-{{ product.id }}">
+                                <i class="fas fa-check me-1"></i>Terima kasih atas penilaian Anda!
+                            </small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Footer -->
+                <div class="card-footer bg-light border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="fas fa-chart-line me-1"></i>
+                            Kesesuaian: {{ "%.0f"|format(recommendation.content_similarity * 100) }}%
+                        </small>
+                        <div class="progress" style="width: 60px; height: 6px;">
+                            <div class="progress-bar bg-primary" 
+                                 style="width: {{ recommendation.content_similarity * 100 }}%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Load More Button -->
+    {% if recommendations|length >= 12 %}
+    <div class="row">
+        <div class="col-12 text-center">
+            <button class="btn btn-outline-primary btn-lg" onclick="loadMoreProducts()">
+                <i class="fas fa-plus me-2"></i>Muat Lebih Banyak
+            </button>
+        </div>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <!-- No Recommendations -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-search fa-4x text-muted mb-4"></i>
+                    <h4 class="text-muted mb-3">Tidak Ada Rekomendasi</h4>
+                    {% if not user_preferences %}
+                    <p class="text-muted mb-4">
+                        Anda belum mengisi preferensi skincare. Lengkapi preferensi terlebih dahulu untuk mendapatkan rekomendasi.
+                    </p>
+                    <a href="{{ url_for('user_preferences') }}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-cog me-2"></i>Lengkapi Preferensi
+                    </a>
+                    {% else %}
+                    <p class="text-muted mb-4">
+                        Tidak ditemukan produk yang sesuai dengan kriteria pencarian Anda. Coba ubah filter atau preferensi.
+                    </p>
+                    <div class="d-flex gap-2 justify-content-center">
+                        <a href="{{ url_for('get_recommendations') }}" class="btn btn-primary">
+                            <i class="fas fa-refresh me-2"></i>Reset Filter
+                        </a>
+                        <a href="{{ url_for('user_preferences') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-edit me-2"></i>Edit Preferensi
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Product Detail Modal -->
+<div class="modal fade" id="productDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detail Produk</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="productDetailContent">
+                <div class="text-center py-4">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Product detail modal
+function showProductDetail(productId) {
+    const modal = new bootstrap.Modal(document.getElementById('productDetailModal'));
+    const content = document.getElementById('productDetailContent');
+    
+    // Show loading
+    content.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 text-muted">Memuat detail produk...</p>
+        </div>
+    `;
+    
+    modal.show();
+    
+    // Fetch product detail (you'll need to implement this endpoint)
+    fetch(`/api/product/${productId}`)
+        .then(response => response.json())
+        .then(data => {
+            content.innerHTML = `
+                <div class="row">
+                    <div class="col-12">
+                        <h4>${data.nama_produk}</h4>
+                        <div class="mb-3">
+                            <span class="badge bg-primary me-2">${data.brand}</span>
+                            <span class="badge bg-success">${data.harga}</span>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <h6>Informasi Produk</h6>
+                                <ul class="list-unstyled">
+                                    <li><strong>Jenis:</strong> ${data.jenis_produk || 'Tidak diketahui'}</li>
+                                    <li><strong>Bahan Utama:</strong> ${data.bahan_utama || 'Tidak diketahui'}</li>
+                                    <li><strong>Kondisi Kulit:</strong> ${data.kondisi_kulit || 'Semua jenis'}</li>
+                                    <li><strong>Rating:</strong> ${data.rating || 'Belum ada rating'}/5</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Deskripsi</h6>
+                                <p class="text-muted">${data.deskripsi || 'Deskripsi tidak tersedia'}</p>
+                            </div>
+                        </div>
+                        
+                        ${data.link_produk ? `
+                        <div class="mb-3">
+                            <a href="${data.link_produk}" target="_blank" class="btn btn-success btn-sm">
+                                <i class="fas fa-external-link-alt me-1"></i>Lihat Produk di Website
+                            </a>
+                        </div>
+                        ` : ''}
+                        
+                        ${data.explanation ? `
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-lightbulb me-2"></i>Mengapa Produk Ini Cocok:</h6>
+                            <p class="mb-0">${data.explanation}</p>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        })
+        .catch(error => {
+            content.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Gagal memuat detail produk. Silakan coba lagi.
+                </div>
+            `;
+        });
+}
+
+// Auto-submit form on filter change
+document.addEventListener('DOMContentLoaded', function() {
+    const sortSelect = document.getElementById('sort_by');
+    if (sortSelect) {
+        sortSelect.addEventListener('change', function() {
+            document.getElementById('filterForm').submit();
+        });
+    }
+});
+
+// Load more products (for pagination)
+function loadMoreProducts() {
+    // Implementation for loading more products
+    console.log('Load more products functionality');
+}
+
+// Submit rating via AJAX
+function submitRating(productId, rating) {
+    const formData = new FormData();
+    formData.append('product_id', productId);
+    formData.append('rating', rating);
+    fetch('/user/rate', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            const msg = document.getElementById(`rating-msg-${productId}`);
+            if (data.success) {
+                if (msg) { msg.classList.remove('d-none'); }
+                // Colorize stars up to rating
+                const container = document.querySelector(`.rating-stars[data-product-id='${productId}']`);
+                if (container) {
+                    const stars = container.querySelectorAll('.star-icon');
+                    stars.forEach((el, idx) => {
+                        el.classList.toggle('text-warning', idx < rating);
+                        el.classList.toggle('text-secondary', idx >= rating);
+                    });
+                }
+            } else {
+                alert(data.message || 'Gagal menyimpan rating');
+            }
+        })
+        .catch(err => {
+            alert('Terjadi kesalahan saat mengirim rating');
+        });
+}
+</script>
+
+<style>
+.bg-gradient-success {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+}
+
+.product-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+}
+
+.progress {
+    border-radius: 10px;
+}
+
+.progress-bar {
+    border-radius: 10px;
+}
+
+.badge {
+    font-size: 0.75rem;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    line-height: 1.3;
+    height: 2.6rem;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+.btn {
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.modal-content {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    border-bottom: 1px solid #e9ecef;
+    border-radius: 15px 15px 0 0;
+}
+
+.star-icon { cursor: pointer; }
+</style>
+{% endblock %}

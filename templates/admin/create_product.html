@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}Tambah Produk - Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-1">Tambah Produk Baru</h2>
+                    <p class="text-muted mb-0">Tambahkan produk skincare baru ke dalam sistem</p>
+                </div>
+                <div>
+                    <a href="{{ url_for('admin_products') }}" class="btn btn-outline-secondary">
+                        <i class="fas fa-arrow-left me-2"></i>Kembali ke Daftar Produk
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- Create Product Form -->
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0">
+                        <i class="fas fa-plus-circle text-primary me-2"></i>
+                        Informasi Produk
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <form method="POST" id="createProductForm">
+                        <div class="row">
+                            <!-- Product Name -->
+                            <div class="col-md-6 mb-3">
+                                <label for="name" class="form-label">Nama Produk <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+
+                            <!-- Brand -->
+                            <div class="col-md-6 mb-3">
+                                <label for="brand" class="form-label">Brand <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="brand" name="brand" required>
+                            </div>
+
+                            <!-- Category -->
+                            <div class="col-md-6 mb-3">
+                                <label for="category" class="form-label">Kategori <span class="text-danger">*</span></label>
+                                <select class="form-select" id="category" name="category" required>
+                                    <option value="">Pilih Kategori</option>
+                                    <option value="Cleanser">Cleanser</option>
+                                    <option value="Moisturizer">Moisturizer</option>
+                                    <option value="Serum">Serum</option>
+                                    <option value="Sunscreen">Sunscreen</option>
+                                    <option value="Toner">Toner</option>
+                                    <option value="Scrub">Scrub</option>
+                                    <option value="Deodorant">Deodorant</option>
+                                    <option value="Other">Lainnya</option>
+                                </select>
+                            </div>
+
+                            <!-- Price -->
+                            <div class="col-md-6 mb-3">
+                                <label for="price" class="form-label">Harga (Rp) <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="price" name="price" min="0" step="0.01" required>
+                            </div>
+
+                            <!-- Rating -->
+                            <div class="col-md-6 mb-3">
+                                <label for="rating" class="form-label">Rating</label>
+                                <input type="number" class="form-control" id="rating" name="rating" min="0" max="5" step="0.1" value="0.0">
+                                <div class="form-text">Rating dari 0.0 hingga 5.0</div>
+                            </div>
+
+                            <!-- Skin Type -->
+                            <div class="col-md-6 mb-3">
+                                <label for="skin_type" class="form-label">Jenis Kulit</label>
+                                <select class="form-select" id="skin_type" name="skin_type">
+                                    <option value="">Pilih Jenis Kulit</option>
+                                    <option value="All">Semua Jenis Kulit</option>
+                                    <option value="Oily">Berminyak</option>
+                                    <option value="Dry">Kering</option>
+                                    <option value="Combination">Kombinasi</option>
+                                    <option value="Sensitive">Sensitif</option>
+                                    <option value="Normal">Normal</option>
+                                    <option value="Acne-Prone">Berjerawat</option>
+                                </select>
+                            </div>
+
+                            <!-- Description -->
+                            <div class="col-12 mb-3">
+                                <label for="description" class="form-label">Deskripsi <span class="text-danger">*</span></label>
+                                <textarea class="form-control" id="description" name="description" rows="4" required></textarea>
+                            </div>
+
+                            <!-- Ingredients -->
+                            <div class="col-12 mb-3">
+                                <label for="ingredients" class="form-label">Bahan-bahan</label>
+                                <textarea class="form-control" id="ingredients" name="ingredients" rows="3" placeholder="Masukkan bahan-bahan produk (opsional)"></textarea>
+                            </div>
+
+                            <!-- Image URL -->
+                            <div class="col-12 mb-3">
+                                <label for="image_url" class="form-label">URL Gambar</label>
+                                <input type="url" class="form-control" id="image_url" name="image_url" placeholder="https://example.com/image.jpg">
+                                <div class="form-text">URL gambar produk (opsional)</div>
+                            </div>
+
+                            <!-- Product Link URL -->
+                            <div class="col-12 mb-3">
+                                <label for="link_produk" class="form-label">URL Produk (Marketplace/Toko)</label>
+                                <input type="url" class="form-control" id="link_produk" name="link_produk" placeholder="https://example.com/produk">
+                                <div class="form-text">Tautan ke halaman produk (opsional, untuk referensi/checkout)</div>
+                            </div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-end gap-2 mt-4">
+                            <a href="{{ url_for('admin_products') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-times me-2"></i>Batal
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-2"></i>Simpan Produk
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Preview Card -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-bottom">
+                    <h5 class="mb-0">
+                        <i class="fas fa-eye text-info me-2"></i>
+                        Preview Produk
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="product-preview">
+                        <div class="product-image mb-3">
+                            <img id="previewImage" src="https://via.placeholder.com/300x200?text=No+Image" 
+                                 class="img-fluid rounded" alt="Product Preview" style="width: 100%; height: 200px; object-fit: cover;">
+                        </div>
+                        <h6 id="previewName" class="text-muted">Nama Produk</h6>
+                        <p id="previewBrand" class="text-muted mb-1">Brand</p>
+                        <p id="previewCategory" class="badge bg-secondary mb-2">Kategori</p>
+                        <h5 id="previewPrice" class="text-primary mb-2">Rp 0</h5>
+                        <div class="d-flex align-items-center mb-2">
+                            <div id="previewRating" class="text-warning me-2">
+                                <i class="fas fa-star"></i> 0.0
+                            </div>
+                            <span id="previewSkinType" class="badge bg-light text-dark">Jenis Kulit</span>
+                        </div>
+                        <p id="previewDescription" class="text-muted small">Deskripsi produk akan muncul di sini...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tips Card -->
+            <div class="card border-0 shadow-sm mt-3">
+                <div class="card-header bg-light border-bottom">
+                    <h6 class="mb-0">
+                        <i class="fas fa-lightbulb text-warning me-2"></i>
+                        Tips
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <ul class="list-unstyled mb-0 small">
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Pastikan nama produk jelas dan deskriptif</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Pilih kategori yang sesuai dengan produk</li>
+                        <li class="mb-2"><i class="fas fa-check text-success me-2"></i>Masukkan harga yang akurat</li>
+                        <li class="mb-0"><i class="fas fa-check text-success me-2"></i>Gunakan URL gambar yang valid</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form elements
+    const nameInput = document.getElementById('name');
+    const brandInput = document.getElementById('brand');
+    const categorySelect = document.getElementById('category');
+    const priceInput = document.getElementById('price');
+    const ratingInput = document.getElementById('rating');
+    const skinTypeSelect = document.getElementById('skin_type');
+    const descriptionTextarea = document.getElementById('description');
+    const imageUrlInput = document.getElementById('image_url');
+
+    // Preview elements
+    const previewName = document.getElementById('previewName');
+    const previewBrand = document.getElementById('previewBrand');
+    const previewCategory = document.getElementById('previewCategory');
+    const previewPrice = document.getElementById('previewPrice');
+    const previewRating = document.getElementById('previewRating');
+    const previewSkinType = document.getElementById('previewSkinType');
+    const previewDescription = document.getElementById('previewDescription');
+    const previewImage = document.getElementById('previewImage');
+
+    // Update preview function
+    function updatePreview() {
+        previewName.textContent = nameInput.value || 'Nama Produk';
+        previewBrand.textContent = brandInput.value || 'Brand';
+        previewCategory.textContent = categorySelect.value || 'Kategori';
+        previewPrice.textContent = priceInput.value ? `Rp ${parseInt(priceInput.value).toLocaleString('id-ID')}` : 'Rp 0';
+        previewRating.innerHTML = `<i class="fas fa-star"></i> ${ratingInput.value || '0.0'}`;
+        previewSkinType.textContent = skinTypeSelect.value || 'Jenis Kulit';
+        previewDescription.textContent = descriptionTextarea.value || 'Deskripsi produk akan muncul di sini...';
+        
+        if (imageUrlInput.value) {
+            previewImage.src = imageUrlInput.value;
+            previewImage.onerror = function() {
+                this.src = 'https://via.placeholder.com/300x200?text=Invalid+Image';
+            };
+        }
+    }
+
+    // Add event listeners
+    nameInput.addEventListener('input', updatePreview);
+    brandInput.addEventListener('input', updatePreview);
+    categorySelect.addEventListener('change', updatePreview);
+    priceInput.addEventListener('input', updatePreview);
+    ratingInput.addEventListener('input', updatePreview);
+    skinTypeSelect.addEventListener('change', updatePreview);
+    descriptionTextarea.addEventListener('input', updatePreview);
+    imageUrlInput.addEventListener('input', updatePreview);
+
+    // Form validation
+    document.getElementById('createProductForm').addEventListener('submit', function(e) {
+        const requiredFields = ['name', 'brand', 'category', 'price', 'description'];
+        let isValid = true;
+
+        requiredFields.forEach(fieldName => {
+            const field = document.getElementById(fieldName);
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+
+        if (!isValid) {
+            e.preventDefault();
+            alert('Mohon lengkapi semua field yang wajib diisi!');
+        }
+    });
+});
+</script>
+
+<style>
+.product-preview {
+    text-align: center;
+}
+
+.form-control.is-invalid {
+    border-color: #dc3545;
+}
+
+.badge {
+    font-size: 0.75em;
+}
+
+.card {
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+</style>
+{% endblock %}
