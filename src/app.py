@@ -8,7 +8,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import mysql.connector
 from config import Config
 from models import User, Admin, Product, UserPreference, UserRating
-from recommender import SkincareRecommender
+from recommender_light import SkincareRecommender
 import os
 
 app = Flask(__name__, 
@@ -110,7 +110,7 @@ def user_dashboard():
     
     if user_preferences:
         try:
-            from recommender import SkincareRecommender
+            from recommender_light import SkincareRecommender
             recommender = SkincareRecommender()
             
             # Convert user_preferences dict to include rentang_harga
