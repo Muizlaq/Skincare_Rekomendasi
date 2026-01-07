@@ -299,11 +299,13 @@ def health_env():
         info = {
             'vercel': os.environ.get('VERCEL') == '1',
             'debug': app.config.get('DEBUG'),
+            'db_type': getattr(Config, 'DB_TYPE', None),
             'db_host': Config.DB_HOST,
             'db_port': Config.DB_PORT,
             'db_user_set': bool(Config.DB_USER),
             'db_name': Config.DB_NAME,
-            'db_use_ssl': getattr(Config, 'DB_USE_SSL', False)
+            'db_use_ssl': getattr(Config, 'DB_USE_SSL', False),
+            'database_url_set': bool(getattr(Config, 'DATABASE_URL', None))
         }
         return jsonify({'ok': True, 'env': info})
     except Exception as e:
