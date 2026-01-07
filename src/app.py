@@ -5,11 +5,12 @@ sys.path.append(os.path.dirname(__file__))
 
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
-import mysql.connector
 from config import Config
 from models import User, Admin, Product, UserPreference, UserRating
 from recommender_light import SkincareRecommender
 import os
+
+from config import DatabaseConfig
 
 app = Flask(__name__, 
             template_folder=os.path.join(os.path.dirname(__file__), '..', 'templates'),
@@ -18,6 +19,12 @@ app.config.from_object(Config)
 
 # Initialize recommender
 recommender = SkincareRecommender()
+
+# Initialize database at startup (Flask 3 compatibility: no before_first_request)
+try:
+    DatabaseConfig.init_database()
+except Exception:
+    pass
 
 @app.route('/')
 def index():
@@ -257,6 +264,54 @@ def get_recommendations():
     return render_template('user/recommendations.html', 
                          recommendations=recommendations, 
                          preferences=preferences)
+
+@app.route('/health/db')
+def health_db():
+    conn = None
+    try:
+        conn = DatabaseConfig.get_connection()
+        if not conn:
+            return jsonify({
+                'ok': False,
+                'message': 'Tidak dapat terhubung ke database. Cek env DB_HOST/DB_PORT/DB_USER/DB_PASSWORD/DB_NAME.'
+            }), 500
+        cursor = conn.cursor()
+        db_type = (Config.DB_TYPE or '').lower()
+        if db_type in ('postgres', 'postgresql'):
+            cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema='public'")
+            tables = [row[0] for row in cursor.fetchall()]
+        else:
+            cursor.execute("SHOW TABLES")
+            tables = [row[0] for row in cursor.fetchall()]
+        return jsonify({'ok': True, 'tables': tables})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+    finally:
+        try:
+            if conn:
+                conn.close()
+        except Exception:
+            pass
+
+@app.route('/health/env')
+def health_env():
+    try:
+        info = {
+            'vercel': os.environ.get('VERCEL') == '1',
+            'debug': app.config.get('DEBUG'),
+            'db_host': Config.DB_HOST,
+            'db_port': Config.DB_PORT,
+            'db_user_set': bool(Config.DB_USER),
+            'db_name': Config.DB_NAME,
+            'db_use_ssl': getattr(Config, 'DB_USE_SSL', False)
+        }
+        return jsonify({'ok': True, 'env': info})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+@app.route('/health/ping')
+def health_ping():
+    return jsonify({'ok': True})
 
 @app.route('/admin/dashboard')
 def admin_dashboard():

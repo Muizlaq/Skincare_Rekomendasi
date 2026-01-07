@@ -1,5 +1,5 @@
 from werkzeug.security import generate_password_hash, check_password_hash
-from config import DatabaseConfig
+from config import DatabaseConfig, Config
 from datetime import datetime
 import re
  
@@ -64,16 +64,22 @@ class User:
         if User.get_by_email(email):
             return {'success': False, 'errors': ['Email sudah terdaftar']}
         
-        # Create user
+        # Create user with adaptive schema (password vs password_hash, nama_lengkap vs full_name)
         hashed_password = generate_password_hash(password)
         
-        # Note: Current database schema doesn't have 'age' column, so we ignore umur parameter
-        query = f"""
-            INSERT INTO users (username, email, password, nama_lengkap)
-            VALUES (%s, %s, %s, %s)
+        # Detect column names dynamically
+        col_query = """
+            SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
+            WHERE TABLE_SCHEMA = %s AND TABLE_NAME = 'users'
         """
-        params = (username.strip(), email.strip(), hashed_password, nama_lengkap.strip())
+        schema = 'public' if (getattr(Config, 'DB_TYPE', '').lower() in ('postgres', 'postgresql')) else Config.DB_NAME
+        cols = DatabaseConfig.execute_query(col_query, (schema,), fetch=True)
+        columns = set([row['COLUMN_NAME'] for row in cols]) if cols else set()
+        password_col = 'password' if 'password' in columns else 'password_hash'
+        name_col = 'nama_lengkap' if 'nama_lengkap' in columns else 'full_name'
         
+        query = f"INSERT INTO users (username, email, {password_col}, {name_col}) VALUES (%s, %s, %s, %s)"
+        params = (username.strip(), email.strip(), hashed_password, nama_lengkap.strip())
         result = DatabaseConfig.execute_query(query, params)
         
         if result:
@@ -106,7 +112,11 @@ class User:
     def authenticate(username, password):
         """Authenticate user"""
         user = User.get_by_username(username)
-        if user and check_password_hash(user['password'], password):
+        if not user:
+            return None
+        # Determine password column key dynamically
+        pwd_key = 'password' if 'password' in user else 'password_hash'
+        if user.get(pwd_key) and check_password_hash(user.get(pwd_key), password):
             return user
         return None
     
@@ -439,26 +449,46 @@ class UserPreference:
     
     @staticmethod
     def ensure_table():
-        """Create user_preferences table if it does not exist (using mapped table names)."""
-        query = f"""
-            CREATE TABLE IF NOT EXISTS user_preferences (
-                id INT PRIMARY KEY AUTO_INCREMENT,
-                user_id INT NOT NULL,
-                kondisi_kulit ENUM('berminyak','kering','kombinasi','sensitif','normal') NOT NULL,
-                usia ENUM('18-25','26-35','36-45','46+') NOT NULL,
-                masalah_kulit ENUM('jerawat','komedo','kusam','kerutan','flek_hitam','pori_besar') NOT NULL,
-                rentang_harga ENUM('0-50000','50000-100000','100000-200000','200000-500000','500000+') NOT NULL,
-                efektivitas_bahan_aktif ENUM('rendah','sedang','tinggi') NOT NULL,
-                preferensi_produk ENUM('cleanser','moisturizer','serum','sunscreen','toner','semua') NOT NULL,
-                frekuensi_penggunaan ENUM('pagi','malam','pagi_malam') NOT NULL,
-                kata_kunci_preferensi TEXT,
-                k_value INT DEFAULT 3,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                INDEX idx_user_id (user_id),
-                CONSTRAINT fk_up_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-        """
+        t = (getattr(Config, 'DB_TYPE', '').lower())
+        if t in ('postgres', 'postgresql'):
+            query = f"""
+                CREATE TABLE IF NOT EXISTS user_preferences (
+                    id SERIAL PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    kondisi_kulit TEXT NOT NULL,
+                    usia TEXT NOT NULL,
+                    masalah_kulit TEXT NOT NULL,
+                    rentang_harga TEXT NOT NULL,
+                    efektivitas_bahan_aktif TEXT NOT NULL,
+                    preferensi_produk TEXT NOT NULL,
+                    frekuensi_penggunaan TEXT NOT NULL,
+                    kata_kunci_preferensi TEXT,
+                    k_value INT DEFAULT 3,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    CONSTRAINT fk_up_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                );
+            """
+        else:
+            query = f"""
+                CREATE TABLE IF NOT EXISTS user_preferences (
+                    id INT PRIMARY KEY AUTO_INCREMENT,
+                    user_id INT NOT NULL,
+                    kondisi_kulit ENUM('berminyak','kering','kombinasi','sensitif','normal') NOT NULL,
+                    usia ENUM('18-25','26-35','36-45','46+') NOT NULL,
+                    masalah_kulit ENUM('jerawat','komedo','kusam','kerutan','flek_hitam','pori_besar') NOT NULL,
+                    rentang_harga ENUM('0-50000','50000-100000','100000-200000','200000-500000','500000+') NOT NULL,
+                    efektivitas_bahan_aktif ENUM('rendah','sedang','tinggi') NOT NULL,
+                    preferensi_produk ENUM('cleanser','moisturizer','serum','sunscreen','toner','semua') NOT NULL,
+                    frekuensi_penggunaan ENUM('pagi','malam','pagi_malam') NOT NULL,
+                    kata_kunci_preferensi TEXT,
+                    k_value INT DEFAULT 3,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_user_id (user_id),
+                    CONSTRAINT fk_up_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+            """
         return DatabaseConfig.execute_query(query) is not None
     
     @staticmethod
@@ -571,23 +601,39 @@ class UserRating:
 
     @staticmethod
     def ensure_table():
-        """Create ratings table if it does not exist (MySQL)."""
-        query = (
-            f"""
-            CREATE TABLE IF NOT EXISTS user_ratings (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT NOT NULL,
-                product_id INT NOT NULL,
-                rating INT NOT NULL,
-                note TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                INDEX idx_user_product (user_id, product_id),
-                INDEX idx_product (product_id),
-                FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-                FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-            """
-        )
+        t = (getattr(Config, 'DB_TYPE', '').lower())
+        if t in ('postgres', 'postgresql'):
+            query = (
+                f"""
+                CREATE TABLE IF NOT EXISTS user_ratings (
+                    id SERIAL PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    product_id INT NOT NULL,
+                    rating INT NOT NULL,
+                    note TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+                );
+                """
+            )
+        else:
+            query = (
+                f"""
+                CREATE TABLE IF NOT EXISTS user_ratings (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id INT NOT NULL,
+                    product_id INT NOT NULL,
+                    rating INT NOT NULL,
+                    note TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_user_product (user_id, product_id),
+                    INDEX idx_product (product_id),
+                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+                    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+                """
+            )
         return DatabaseConfig.execute_query(query) is not None
 
     @staticmethod
@@ -611,10 +657,10 @@ class UserRating:
 
         existing = UserRating.get_by_user_and_product(user_id, product_id)
         if existing:
-            query = f"UPDATE {TABLE_RATINGS} SET rating = %s, note = %s, created_at = CURRENT_TIMESTAMP WHERE id = %s"
+            query = f"UPDATE user_ratings SET rating = %s, note = %s, created_at = CURRENT_TIMESTAMP WHERE id = %s"
             params = (rating_int, note, existing['id'])
         else:
-            query = f"INSERT INTO {TABLE_RATINGS} (user_id, product_id, rating, note) VALUES (%s, %s, %s, %s)"
+            query = f"INSERT INTO user_ratings (user_id, product_id, rating, note) VALUES (%s, %s, %s, %s)"
             params = (user_id, product_id, rating_int, note)
         result = DatabaseConfig.execute_query(query, params)
         return result is not None
@@ -622,7 +668,7 @@ class UserRating:
     @staticmethod
     def count():
         """Count total ratings."""
-        query = f"SELECT COUNT(*) as total FROM {TABLE_RATINGS}"
+        query = f"SELECT COUNT(*) as total FROM user_ratings"
         result = DatabaseConfig.execute_query(query, fetch=True)
         return result[0]['total'] if result else 0
 
@@ -634,8 +680,8 @@ class UserRating:
             SELECT p.id as product_id, p.nama_produk as name, p.brand,
                    COUNT(r.id) as rating_count,
                    ROUND(AVG(r.rating), 2) as avg_rating
-            FROM {TABLE_PRODUCTS} p
-            LEFT JOIN {TABLE_RATINGS} r ON r.product_id = p.id
+            FROM products p
+            LEFT JOIN user_ratings r ON r.product_id = p.id
             GROUP BY p.id, p.nama_produk, p.brand
             ORDER BY rating_count DESC, avg_rating DESC
             LIMIT %s
@@ -650,9 +696,9 @@ class UserRating:
             f"""
             SELECT r.id, r.user_id, u.username, r.product_id, p.nama_produk as name,
                    r.rating, r.created_at
-            FROM {TABLE_RATINGS} r
-            JOIN {TABLE_USERS} u ON u.id = r.user_id
-            JOIN {TABLE_PRODUCTS} p ON p.id = r.product_id
+            FROM user_ratings r
+            JOIN users u ON u.id = r.user_id
+            JOIN products p ON p.id = r.product_id
             ORDER BY r.created_at DESC
             LIMIT %s
             """
